@@ -5,15 +5,16 @@ from plotly.subplots import make_subplots
 import streamlit as st
 import yfinance as yf
 
-# 1. 페이지 기본 설정
+# 1. 모바일 맞춤 페이지 기본 설정
 st.set_page_config(
     page_title="글로벌 원자재 & 배터리/메모리 대시보드",
     page_icon="📊",
     layout="wide",
+    initial_sidebar_state="collapsed", # 모바일에서 차트를 먼저 보여주기 위해 사이드바 접음
 )
 
-st.title("📊 글로벌 원자재 · 배터리/메모리 가격 및 연관 종목/ETF 대시보드")
-
+st.title("📊 글로벌 원자재 · 배터리/메모리 대시보드")
+st.caption("💡 화면 왼쪽 상단의 **`>`** 버튼을 터치하면 종목 및 섹터를 변경할 수 있습니다.")
 
 # 2. 벤치마크 데이터 수집
 @st.cache_data(ttl=14400)
@@ -49,7 +50,6 @@ def load_daily_market_benchmarks():
         st.error(f"벤치마크 데이터 수집 실패: {ex}")
         return pd.DataFrame()
 
-
 # 3. 주가 및 ETF 수집 함수
 @st.cache_data(ttl=14400)
 def load_daily_stock_data(ticker_symbol):
@@ -69,7 +69,6 @@ def load_daily_stock_data(ticker_symbol):
     except Exception as ex:
         st.error(f"주가 수집 실패 ({ticker_symbol}): {ex}")
         return pd.DataFrame()
-
 
 market_df = load_daily_market_benchmarks()
 
@@ -106,7 +105,7 @@ if sector == "2차전지 · 전고체배터리 · 원자재":
         "Amplify Lithium & Battery ETF (BATT)": "BATT",
     }
     commodity_col = "Lithium_Index"
-    commodity_label = "글로벌 리튬/배터리 지수 (LIT ETF 기준)"
+    commodity_label = "글로벌 리튬/배터리 지수 (LIT)"
 
 else:
     stock_options = {
@@ -128,7 +127,7 @@ else:
         "VanEck Semiconductor ETF (SMH)": "SMH",
     }
     commodity_col = "Memory_Semi_Index"
-    commodity_label = "글로벌 반도체 업황 지수 (SOXX ETF 기준)"
+    commodity_label = "글로벌 반도체 업황 지수 (SOXX)"
 
 valid_keys = [k for k, v in stock_options.items() if v is not None]
 selected_stock_label = st.sidebar.selectbox("연동할 종목 또는 ETF", valid_keys)
@@ -137,23 +136,22 @@ selected_ticker = stock_options[selected_stock_label]
 stock_df = load_daily_stock_data(selected_ticker)
 
 # ---------------------------------------------------------
-# 📅 차트 바로 위 기간 선택 컨트롤러
+# 📅 [모바일 최적화] 터치 스크롤형 기간 선택 UI (st.pills)
 # ---------------------------------------------------------
-st.markdown("### 📅 분석 기간 선택")
-
-if "selected_period" not in st.session_state:
-    st.session_state.selected_period = "1Y"
-
+st.markdown("#### 📅 기간 선택")
 periods = ["1M", "3M", "6M", "1Y", "2Y", "3Y", "4Y", "5Y", "10Y", "ALL"]
-cols = st.columns(len(periods))
 
-for idx, p in enumerate(periods):
-    btn_type = "primary" if st.session_state.selected_period == p else "secondary"
-    if cols[idx].button(p, key=f"btn_{p}", type=btn_type, use_container_width=True):
-        st.session_state.selected_period = p
-        st.rerun()
+# 모바일에서 좌우 스크롤로 가볍게 터치 선택 가능한 pills 컨트롤 사용
+period_choice = st.pills(
+    "기간",
+    options=periods,
+    default="1Y",
+    label_visibility="collapsed"
+)
 
-period_choice = st.session_state.selected_period
+if not period_choice:
+    period_choice = "1Y"
+
 max_date = market_df.index.max().date()
 
 if period_choice == "1M":
@@ -178,7 +176,7 @@ else:
     init_start = market_df.index.min().date()
 
 # ---------------------------------------------------------
-# 📌 기간 맞춤 정합성(%) 및 KPI 계산
+# 📌 기간 맞춤 정합성(%) 및 데이터 계산
 # ---------------------------------------------------------
 filtered_market = market_df.loc[market_df.index.date >= init_start]
 filtered_stock = (
@@ -200,14 +198,21 @@ if not filtered_market.empty and not filtered_stock.empty:
         corr_val = merged.iloc[:, 0].corr(merged.iloc[:, 1])
         match_rate = (corr_val**2) * 100
 
-col1, col2, col3 = st.columns(3)
+# ---------------------------------------------------------
+# 📱 [모바일 최적화] 핵심 지표 카드 및 정합성 강조 배지
+# ---------------------------------------------------------
+# 모바일 세로 화면을 위해 정합성 지표를 맨 위 상단에 강조 배너로 표시
+st.info(
+    f"🔥 **{period_choice} 정합성 비율: {match_rate:.1f}%** (상관계수 r = {corr_val:.2f})"
+)
 
+# 모바일 화면 너비 고려하여 세로 배치로 깔끔히 정렬
 if not filtered_market.empty:
     raw_start = filtered_market[commodity_col].iloc[0]
     raw_end = filtered_market[commodity_col].iloc[-1]
     raw_chg = ((raw_end - raw_start) / raw_start) * 100
 
-    col1.metric(
+    st.metric(
         "원자재/업황 지수",
         f"${raw_end:.2f}",
         f"{raw_chg:+.2f}% ({period_choice})",
@@ -221,28 +226,18 @@ if not filtered_stock.empty:
     unit = "원" if ".KS" in selected_ticker or ".KQ" in selected_ticker else "$"
     fmt = f"{st_end:,.0f}{unit}" if unit == "원" else f"${st_end:,.2f}"
 
-    col2.metric(
+    st.metric(
         f"{selected_stock_label.split(' ')[0]} 종가",
         fmt,
         f"{st_chg:+.2f}% ({period_choice})",
     )
 
-col3.metric(
-    f"🔥 정합성 비율 ({period_choice})",
-    f"{match_rate:.1f}%",
-    f"상관계수: {corr_val:.2f}",
-)
-
 st.markdown("---")
 
 # ---------------------------------------------------------
-# 📈 메인 차트
+# 📈 [모바일 최적화] 차트 렌더링
 # ---------------------------------------------------------
 stock_short_name = selected_stock_label.split(" ")[0]
-chart_title = (
-    f"📈 {commodity_label} vs {stock_short_name} "
-    f"<b>[{period_choice} 정합성: <span style='color:#d62728;'>{match_rate:.1f}%</span>]</b>"
-)
 
 fig = make_subplots(specs=[[{"secondary_y": True}]])
 
@@ -261,49 +256,37 @@ if not filtered_stock.empty:
         plotly_go.Scatter(
             x=filtered_stock.index,
             y=filtered_stock.iloc[:, 0],
-            name=f"{selected_stock_label}",
+            name=f"{stock_short_name}",
             line=dict(color="#ff2b2b", width=2),
         ),
         secondary_y=True,
     )
 
-# 고투명 배경 배지 (위치: 좌측 상단 x=0.02, y=0.95로 이동하여 축/범례 겹침 방지)
-badge_bg = "#d6272850" if match_rate >= 50 else "#7f7f7f50"
-
-fig.add_annotation(
-    xref="paper",
-    yref="paper",
-    x=0.02,
-    y=0.95,
-    xanchor="left",
-    yanchor="top",
-    text=f"<b>{period_choice} 정합성: {match_rate:.1f}%</b><br>(r = {corr_val:.2f})",
-    showarrow=False,
-    font=dict(size=13, color="#222222"),
-    align="left",
-    bgcolor=badge_bg,
-    bordercolor="rgba(0, 0, 0, 0.2)",
-    borderwidth=1,
-    borderpad=6,
-    opacity=0.6,
-)
-
 fig.update_layout(
-    title=dict(text=chart_title, font=dict(size=18)),
     hovermode="x unified",
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="left",
+        x=0,
+        font=dict(size=10) # 모바일용 범례 글자 크기 축소
+    ),
     template="plotly_white",
-    height=600,
-    xaxis=dict(type="date"),
+    height=480, # 모바일 한 화면에 쏙 들어오도록 높이 조절
+    margin=dict(l=10, r=10, t=30, b=20), # 여백 최소화
+    xaxis=dict(type="date", fixedrange=True), # 스크롤 간섭 방지
+    yaxis=dict(fixedrange=True),
+    yaxis2=dict(fixedrange=True),
 )
 
 fig.update_yaxes(title_text=f"<b>{commodity_label}</b>", secondary_y=False)
-fig.update_yaxes(title_text=f"<b>{selected_stock_label}</b>", secondary_y=True)
+fig.update_yaxes(title_text=f"<b>{stock_short_name}</b>", secondary_y=True)
 
-st.plotly_chart(fig, width="stretch")
+st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 # ---------------------------------------------------------
 # 📄 데이터표
 # ---------------------------------------------------------
 with st.expander("📄 선택 기간 일별 데이터표 조회"):
-    st.dataframe(filtered_market.sort_index(ascending=False))
+    st.dataframe(filtered_market.sort_index(ascending=False), use_container_width=True)
