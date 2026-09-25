@@ -7,7 +7,7 @@ import yfinance as yf
 
 # 1. 모바일 맞춤 페이지 기본 설정
 st.set_page_config(
-    page_title="글로벌 원자재 & 배터리/메모리 대시보드",
+    page_title="2차 전지/메모리 Dash Board",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="collapsed", # 모바일 접속 시 사이드바를 기본적으로 접어둠
@@ -90,7 +90,7 @@ if sector == "2차전지 · 전고체배터리 · 원자재":
         "SK이노베이션 (096770.KS)": "096770.KS",
         "--- [전고체 & 핵심 소재 ETF] ---": None,
         "KODEX 전고체배터리ESS TOP2플러스 (0209D0.KS)": "0209D0.KS",
-        "KODEX 2차전지핵심소재10 (462330.KS)": "462330.KS",
+        "KODEX 2차전지핵심소재10 (461950.KS)": "461950.KS",
         "KODEX 차세대배터리 [전고체/소재] (305720.KS)": "305720.KS",
         "TIGER 2차전지테마 (305540.KS)": "305540.KS",
         "SOL 2차전지소부장Fn (455860.KS)": "455860.KS",
