@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed", # 모바일 접속 시 사이드바를 기본적으로 접어둠
 )
 
-st.title("📊 글로벌 원자재 · 배터리/메모리 대시보드")
+st.title("📊 2nd Battery/Memory Analysis")
 st.caption("💡 화면 왼쪽 상단의 **`>`** 버튼을 터치하면 종목 및 섹터를 변경할 수 있습니다.")
 
 # 2. 벤치마크 데이터 수집
