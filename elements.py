@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="글로벌 원자재 & 배터리/메모리 대시보드",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed", # 모바일에서 차트를 먼저 보여주기 위해 사이드바 접음
+    initial_sidebar_state="collapsed", # 모바일 접속 시 사이드바를 기본적으로 접어둠
 )
 
 st.title("📊 글로벌 원자재 · 배터리/메모리 대시보드")
@@ -88,6 +88,12 @@ if sector == "2차전지 · 전고체배터리 · 원자재":
         "삼성SDI [전고체배터리] (006400.KS)": "006400.KS",
         "LG에너지솔루션 (373220.KS)": "373220.KS",
         "SK이노베이션 (096770.KS)": "096770.KS",
+        "--- [전고체 & 핵심 소재 ETF] ---": None,
+        "KODEX 전고체배터리ESS TOP2플러스 (0209D0.KS)": "0209D0.KS",
+        "KODEX 2차전지핵심소재10 (462330.KS)": "462330.KS",
+        "KODEX 차세대배터리 [전고체/소재] (305720.KS)": "305720.KS",
+        "TIGER 2차전지테마 (305540.KS)": "305540.KS",
+        "SOL 2차전지소부장Fn (455860.KS)": "455860.KS",
         "--- [원자재 Top 10 & 주요 소재] ---": None,
         "POSCO홀딩스 [리튬/니켈] (005490.KS)": "005490.KS",
         "고려아연 [비철금속 Top] (010130.KS)": "010130.KS",
@@ -96,10 +102,7 @@ if sector == "2차전지 · 전고체배터리 · 원자재":
         "에코프로비엠 (247540.KQ)": "247540.KQ",
         "앨버말 / Albemarle [글로벌 리튬1위] (ALB)": "ALB",
         "SQM [글로벌 리튬] (SQM)": "SQM",
-        "--- [전고체 & 원자재 ETF] ---": None,
-        "KODEX 차세대배터리 [전고체/소재] (305720.KS)": "305720.KS",
-        "TIGER 2차전지테마 (305540.KS)": "305540.KS",
-        "SOL 2차전지소재Fn (462330.KS)": "462330.KS",
+        "--- [글로벌 원자재 ETF] ---": None,
         "TIGER 금속선물Enhanced [원자재] (139320.KS)": "139320.KS",
         "Global X Lithium & Battery ETF (LIT)": "LIT",
         "Amplify Lithium & Battery ETF (BATT)": "BATT",
@@ -120,7 +123,8 @@ else:
         "한미반도체 (042700.KS)": "042700.KS",
         "ISC (095340.KQ)": "095340.KQ",
         "HPSP (403870.KQ)": "403870.KQ",
-        "--- [국내외 대표 반도체 ETF] ---": None,
+        "--- [국내외 대표 반도체 & 혼합 ETF] ---": None,
+        "RISE 삼성전자SK하이닉스채권혼합50 (0162Z0.KS)": "0162Z0.KS",
         "TIGER 반도체 ETF (091230.KS)": "091230.KS",
         "KODEX 반도체 ETF (091160.KS)": "091160.KS",
         "iShares Semiconductor ETF (SOXX)": "SOXX",
@@ -141,7 +145,7 @@ stock_df = load_daily_stock_data(selected_ticker)
 st.markdown("#### 📅 기간 선택")
 periods = ["1M", "3M", "6M", "1Y", "2Y", "3Y", "4Y", "5Y", "10Y", "ALL"]
 
-# 모바일에서 좌우 스크롤로 가볍게 터치 선택 가능한 pills 컨트롤 사용
+# 모바일 화면을 고려한 스크롤 터치 UI
 period_choice = st.pills(
     "기간",
     options=periods,
@@ -199,14 +203,12 @@ if not filtered_market.empty and not filtered_stock.empty:
         match_rate = (corr_val**2) * 100
 
 # ---------------------------------------------------------
-# 📱 [모바일 최적화] 핵심 지표 카드 및 정합성 강조 배지
+# 📱 핵심 지표 카드 및 정합성 배너
 # ---------------------------------------------------------
-# 모바일 세로 화면을 위해 정합성 지표를 맨 위 상단에 강조 배너로 표시
 st.info(
     f"🔥 **{period_choice} 정합성 비율: {match_rate:.1f}%** (상관계수 r = {corr_val:.2f})"
 )
 
-# 모바일 화면 너비 고려하여 세로 배치로 깔끔히 정렬
 if not filtered_market.empty:
     raw_start = filtered_market[commodity_col].iloc[0]
     raw_end = filtered_market[commodity_col].iloc[-1]
@@ -270,12 +272,12 @@ fig.update_layout(
         y=1.02,
         xanchor="left",
         x=0,
-        font=dict(size=10) # 모바일용 범례 글자 크기 축소
+        font=dict(size=10)
     ),
     template="plotly_white",
-    height=480, # 모바일 한 화면에 쏙 들어오도록 높이 조절
-    margin=dict(l=10, r=10, t=30, b=20), # 여백 최소화
-    xaxis=dict(type="date", fixedrange=True), # 스크롤 간섭 방지
+    height=480,
+    margin=dict(l=10, r=10, t=30, b=20),
+    xaxis=dict(type="date", fixedrange=True),
     yaxis=dict(fixedrange=True),
     yaxis2=dict(fixedrange=True),
 )
